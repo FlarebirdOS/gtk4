@@ -6,7 +6,7 @@ pkgname=(
 )
 pkgbase=gtk4
 pkgver=4.20.1
-pkgrel=1
+pkgrel=2
 pkgdesc="GObject-based multi-platform GUI toolkit"
 arch=('x86_64')
 url="https://www.gtk.org"
@@ -57,6 +57,7 @@ makedepends=(
     'glib2-devel'
     'gobject-introspection'
     'hicolor-icon-theme'
+    'libsysprof-capture'
     'meson'
     'python-docutils'
     'python-gi-docgen'
@@ -95,7 +96,7 @@ build() {
         -D tracker=enabled
         -D colord=enabled
         -D man-pages=true
-        -D sysprof=disabled
+        -D sysprof=enabled
     )
 
     CFLAGS+=" -DG_DISABLE_CAST_CHECKS"
