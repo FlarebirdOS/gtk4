@@ -5,8 +5,8 @@ pkgname=(
     gtk-update-icon-cache
 )
 pkgbase=gtk4
-pkgver=4.20.1
-pkgrel=2
+pkgver=4.20.2
+pkgrel=3
 pkgdesc="GObject-based multi-platform GUI toolkit"
 arch=('x86_64')
 url="https://www.gtk.org"
@@ -15,6 +15,7 @@ depends=(
     'adwaita-fonts'
     'adwaita-icon-theme'
     'at-spi2-core'
+    'bash'
     'cairo'
     'dconf'
     'desktop-file-utils'
@@ -23,8 +24,12 @@ depends=(
     'gcc-libs'
     'gdk-pixbuf'
     'glib2'
+    'glibc'
     'graphene'
     'gst-plugins-bad-libs'
+    'gst-plugins-base-libs'
+    'gstreamer'
+    'gtk-update-icon-cache'
     'harfbuzz'
     'iso-codes'
     'libcloudproviders'
@@ -54,6 +59,7 @@ depends=(
 )
 makedepends=(
     'docbook-xsl'
+    'git'
     'glib2-devel'
     'gobject-introspection'
     'hicolor-icon-theme'
@@ -66,37 +72,37 @@ makedepends=(
     'shaderc'
     'vulkan-headers'
     'wayland-protocols'
-
 )
-source=(https://download.gnome.org/sources/gtk/${pkgver%.*}/${pkgbase%4}-${pkgver}.tar.xz
+source=(git+https://gitlab.gnome.org/GNOME/gtk.git#tag=${pkgver}
     gtk-update-icon-cache.{hook,script}
-    gtk4-querymodules.{hook,script})
-sha256sums=(bf32fac019171c45681b2c45d05658ee8598c6341572e32a6a6bcb0b5673998d
+    gtk4-querymodules.{hook,script}
+    0001-HACK-Don-t-use-objcopy-for-resource-embedding.patch)
+sha256sums=(7730d0a95d3247fc436d5212294c771fccf47f9db3f8de0221a4fc83631c6eee
     2d435e3bec8b79b533f00f6d04decb1d7c299c6e89b5b175f20be0459f003fe8
     be873974b1cbefaa0f28a7478c87d1631400cc3e4bfbacd5378d5436ed8a7b6f
     d32462ab80a38ef42c75c1841ee4a2a5b1dfc5cbce98442bd15918f0d0c82be0
-    5326a8bf7f132b23ea5293de60573a1382b9f5733bdbed5f23940e87bd7a8375)
+    5326a8bf7f132b23ea5293de60573a1382b9f5733bdbed5f23940e87bd7a8375
+    46d6462c0e64479e96210c0762f206fb496d528fc9c6fa7f7aa7543ed90cfc2f)
 
 prepare() {
-    cd ${pkgbase%4}-${pkgver}
+    cd ${pkgbase%4}
 
-    sed -e '939 s/= { 0, }//'                                       \
-        -e '940 a memset (&transform, 0, sizeof(GtkCssTransform));' \
-        -i gtk/gtkcsstransformvalue.c
+    # Allow -fcf-protection to work
+    # https://gitlab.gnome.org/GNOME/gtk/-/issues/6153
+    git apply -3 ${srcdir}/0001-HACK-Don-t-use-objcopy-for-resource-embedding.patch
 }
 
 build() {
-    cd ${pkgbase%4}-${pkgver}
+    cd ${pkgbase%4}
 
     local meson_args=(
         -D broadway-backend=true
-        -D vulkan=enabled
-        -D documentation=true
         -D cloudproviders=enabled
-        -D tracker=enabled
         -D colord=enabled
+        -D documentation=true
         -D man-pages=true
         -D sysprof=enabled
+        -D tracker=enabled
     )
 
     CFLAGS+=" -DG_DISABLE_CAST_CHECKS"
@@ -107,16 +113,7 @@ build() {
 }
 
 package_gtk4() {
-    depends+=(
-        'bash'
-        'glibc'
-        'gst-plugins-base-libs'
-        'gstreamer'
-        'gtk-update-icon-cache'
-        'vulkan-loader'
-    )
-
-    cd ${pkgbase%4}-${pkgver}
+    cd ${pkgbase%4}
 
     ${meson_install} ${pkgdir}
 
@@ -178,6 +175,7 @@ package_gtk-update-icon-cache() {
         'glib2'
         'glibc'
         'hicolor-icon-theme'
+        'librsvg'
     )
 
     mv guic/* ${pkgdir}
